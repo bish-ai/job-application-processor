@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bish Processor — Agentic AI Job Screener</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root {
+    --bg: #080600;
+    --surface: #100e00;
+    --panel: #151000;
+    --border: #2e2500;
+    --accent: #f5c518;
+    --accent2: #e8890c;
+    --accent3: #c9960a;
+    --text: #f0e6c8;
+    --muted: #7a6a3a;
+    --glow: 0 0 22px rgba(245,197,24,0.5);
+    --glow2: 0 0 22px rgba(232,137,12,0.45);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; overflow-x: hidden; cursor: none; }
+
+  #cursor { position: fixed; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; pointer-events: none; z-index: 9999; box-shadow: 0 0 14px var(--accent), 0 0 28px var(--accent); transform: translate(-50%,-50%); transition: transform 0.1s; }
+  #cursor-ring { position: fixed; width: 36px; height: 36px; border: 1px solid rgba(245,197,24,0.5); border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); transition: all 0.15s ease; }
+  #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  .scanline { position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(245,197,24,0.013) 2px, rgba(245,197,24,0.013) 4px); pointer-events: none; z-index: 200; animation: scanAnim 8s linear infinite; }
+  @keyframes scanAnim { 0%{background-position:0 0} 100%{background-position:0 100px} }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 3rem; background: linear-gradient(180deg, rgba(8,6,0,0.97) 0%, transparent 100%); border-bottom: 1px solid rgba(245,197,24,0.09); backdrop-filter: blur(8px); }
+  .logo { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 900; letter-spacing: 0.15em; color: var(--accent); text-shadow: var(--glow); }
+  .logo span { color: var(--accent2); }
+  nav ul { list-style: none; display: flex; gap: 2.5rem; }
+  nav a { font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; letter-spacing: 0.1em; color: var(--muted); text-decoration: none; text-transform: uppercase; transition: color 0.3s; }
+  nav a:hover { color: var(--accent); text-shadow: var(--glow); }
+
+  section { position: relative; z-index: 1; min-height: 100vh; }
+
+  #hero { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10rem 2rem 6rem; overflow: hidden; }
+  .hero-badge { font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; letter-spacing: 0.3em; color: var(--accent); border: 1px solid rgba(245,197,24,0.3); padding: 0.4rem 1.2rem; border-radius: 100px; margin-bottom: 2rem; background: rgba(245,197,24,0.06); animation: fadeUp 0.8s ease both; }
+  .hero-title { font-family: 'Orbitron', monospace; font-size: clamp(3rem,8vw,7rem); font-weight: 900; line-height: 1; letter-spacing: -0.02em; animation: fadeUp 0.9s 0.1s ease both; }
+  .hero-title .line1 { display: block; color: #fff; }
+  .hero-title .line2 { display: block; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: 0.1em; }
+  .hero-sub { font-size: 1.15rem; font-weight: 300; color: var(--muted); max-width: 580px; margin: 1.8rem auto 3rem; line-height: 1.7; animation: fadeUp 1s 0.2s ease both; }
+  .hero-cta { display: flex; gap: 1rem; animation: fadeUp 1s 0.3s ease both; }
+
+  .btn-primary { font-family: 'Orbitron', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; padding: 0.9rem 2.5rem; background: var(--accent); color: #000; border: none; cursor: pointer; text-decoration: none; text-transform: uppercase; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); transition: all 0.3s; }
+  .btn-primary:hover { background: #fff; box-shadow: 0 0 30px rgba(245,197,24,0.7); transform: translateY(-2px); }
+  .btn-outline { font-family: 'Orbitron', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; padding: 0.9rem 2.5rem; background: transparent; color: var(--accent); border: 1px solid var(--accent); cursor: pointer; text-decoration: none; text-transform: uppercase; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); transition: all 0.3s; }
+  .btn-outline:hover { background: rgba(245,197,24,0.08); box-shadow: var(--glow); transform: translateY(-2px); }
+
+  .hero-stats { display: flex; gap: 3rem; margin-top: 5rem; animation: fadeUp 1s 0.4s ease both; }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'Orbitron', monospace; font-size: 2rem; font-weight: 900; color: var(--accent); text-shadow: var(--glow); }
+  .stat-label { font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; margin-top: 0.3rem; }
+
+  #pipeline { padding: 7rem 3rem; max-width: 1300px; margin: 0 auto; }
+  .section-label { font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; letter-spacing: 0.3em; color: var(--accent2); text-transform: uppercase; margin-bottom: 1rem; }
+  .section-title { font-family: 'Orbitron', monospace; font-size: clamp(1.8rem,4vw,3rem); font-weight: 900; line-height: 1.1; margin-bottom: 4rem; }
+  .section-title span { color: var(--accent); }
+
+  .pipeline-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 0; position: relative; }
+  .pipeline-grid::before { content: ''; position: absolute; top: 50px; left: 0; right: 0; height: 1px; background: linear-gradient(90deg,transparent,var(--accent),transparent); z-index: 0; }
+  .pipeline-node { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 1.5rem; opacity: 0; transform: translateY(30px); transition: opacity 0.6s, transform 0.6s; }
+  .pipeline-node.visible { opacity: 1; transform: translateY(0); }
+  .node-icon { width: 100px; height: 100px; border: 1px solid var(--accent); background: var(--panel); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.5rem; position: relative; clip-path: polygon(20% 0%,80% 0%,100% 20%,100% 80%,80% 100%,20% 100%,0% 80%,0% 20%); transition: all 0.3s; box-shadow: inset 0 0 30px rgba(245,197,24,0.05); }
+  .pipeline-node:hover .node-icon { background: rgba(245,197,24,0.1); box-shadow: var(--glow), inset 0 0 30px rgba(245,197,24,0.1); transform: scale(1.1); }
+  .node-num { position: absolute; top: -8px; right: -8px; font-family: 'Orbitron', monospace; font-size: 0.65rem; font-weight: 900; color: #000; background: var(--accent); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; clip-path: polygon(50% 0%,100% 50%,50% 100%,0% 50%); }
+  .node-title { font-family: 'Orbitron', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 0.6rem; }
+  .node-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+
+  #apply { padding: 7rem 3rem; background: linear-gradient(180deg, transparent, rgba(232,137,12,0.04) 50%, transparent); }
+  .form-container { max-width: 900px; margin: 0 auto; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  .field { display: flex; flex-direction: column; gap: 0.5rem; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-family: 'Share Tech Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; }
+  .field input, .field select, .field textarea { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 0.9rem 1.2rem; font-family: 'Rajdhani', sans-serif; font-size: 1rem; outline: none; transition: all 0.3s; -webkit-appearance: none; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); background: rgba(245,197,24,0.04); box-shadow: 0 0 0 1px var(--accent); }
+  .field select option { background: var(--panel); }
+
+  .skills-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap: 0.6rem; }
+  .skill-chip { display: flex; align-items: center; gap: 0.5rem; background: var(--panel); border: 1px solid var(--border); padding: 0.5rem 0.8rem; font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--muted); cursor: pointer; transition: all 0.2s; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+  .skill-chip.active { background: rgba(245,197,24,0.1); border-color: var(--accent); color: var(--accent); }
+  .skill-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  .submit-btn { width: 100%; margin-top: 2rem; font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.2em; padding: 1.2rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #000; border: none; cursor: pointer; text-transform: uppercase; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px)); transition: all 0.3s; position: relative; overflow: hidden; }
+  .submit-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent); transform: translateX(-100%); transition: transform 0.4s; }
+  .submit-btn:hover::before { transform: translateX(0); }
+  .submit-btn:hover { box-shadow: 0 0 40px rgba(245,197,24,0.6), 0 0 80px rgba(232,137,12,0.35); transform: translateY(-2px); }
+  .submit-btn:active { transform: translateY(0); }
+
+  #result-overlay { position: fixed; inset: 0; background: rgba(8,6,0,0.94); z-index: 500; display: none; align-items: center; justify-content: center; backdrop-filter: blur(12px); padding: 2rem; }
+  #result-overlay.show { display: flex; }
+  .result-card { background: var(--panel); border: 1px solid var(--accent); max-width: 640px; width: 100%; padding: 3rem; position: relative; clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px)); box-shadow: var(--glow), 0 40px 80px rgba(0,0,0,0.7); animation: resultPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+  @keyframes resultPop { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
+
+  .result-status { font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 0.8rem; }
+  .status-approved { color: var(--accent); }
+  .status-rejected { color: var(--accent2); }
+  .result-name { font-family: 'Orbitron', monospace; font-size: 1.5rem; font-weight: 900; margin-bottom: 0.4rem; }
+  .result-role { font-family: 'Share Tech Mono', monospace; font-size: 0.8rem; color: var(--accent2); letter-spacing: 0.15em; margin-bottom: 2rem; }
+
+  .result-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+  .metric { background: rgba(245,197,24,0.05); border: 1px solid var(--border); padding: 1rem; text-align: center; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+  .metric-val { font-family: 'Orbitron', monospace; font-size: 1.5rem; font-weight: 900; color: var(--accent); text-shadow: var(--glow); }
+  .metric-lbl { font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 0.3rem; }
+
+  .score-bar-wrap { margin-bottom: 2rem; }
+  .score-bar-label { display: flex; justify-content: space-between; font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 0.5rem; }
+  .score-bar-track { height: 6px; background: var(--border); clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px)); }
+  .score-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent3), var(--accent)); transition: width 1s cubic-bezier(0.4,0,0.2,1) 0.3s; box-shadow: 0 0 12px var(--accent); }
+
+  .result-pipeline { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 2rem; overflow-x: auto; padding-bottom: 0.5rem; }
+  .pipeline-step { font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; padding: 0.3rem 0.8rem; border: 1px solid; white-space: nowrap; clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px)); }
+  .step-done { border-color: var(--accent); color: var(--accent); background: rgba(245,197,24,0.08); }
+  .step-fail { border-color: var(--accent2); color: var(--accent2); background: rgba(232,137,12,0.08); }
+  .step-arrow { color: var(--muted); font-size: 0.8rem; }
+  .result-message { font-size: 1rem; color: var(--text); line-height: 1.7; border-left: 2px solid var(--accent); padding-left: 1rem; margin-bottom: 2rem; }
+  .close-btn { font-family: 'Orbitron', monospace; font-size: 0.7rem; letter-spacing: 0.2em; padding: 0.8rem 2rem; background: transparent; color: var(--muted); border: 1px solid var(--border); cursor: pointer; text-transform: uppercase; transition: all 0.3s; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+  .close-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  #tech { padding: 7rem 3rem; max-width: 1300px; margin: 0 auto; }
+  .tech-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 1.5rem; margin-top: 3rem; }
+  .tech-card { background: var(--panel); border: 1px solid var(--border); padding: 2rem; transition: all 0.3s; opacity: 0; transform: translateY(20px); clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
+  .tech-card.visible { opacity: 1; transform: translateY(0); }
+  .tech-card:hover { border-color: var(--accent2); background: rgba(232,137,12,0.06); box-shadow: 0 0 20px rgba(232,137,12,0.2); transform: translateY(-4px); }
+  .tech-icon { font-size: 2rem; margin-bottom: 1rem; }
+  .tech-name { font-family: 'Orbitron', monospace; font-size: 0.8rem; font-weight: 700; color: var(--accent2); margin-bottom: 0.6rem; letter-spacing: 0.08em; }
+  .tech-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+
+  footer { position: relative; z-index: 1; text-align: center; padding: 3rem; border-top: 1px solid var(--border); font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--muted); letter-spacing: 0.15em; }
+  footer span { color: var(--accent); }
+
+  #processing { position: fixed; inset: 0; background: rgba(8,6,0,0.97); z-index: 600; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 2rem; }
+  #processing.show { display: flex; }
+  .proc-title { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent); letter-spacing: 0.2em; text-shadow: var(--glow); }
+  .proc-nodes { display: flex; gap: 1rem; align-items: center; }
+  .proc-node { width: 50px; height: 50px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; clip-path: polygon(20% 0%,80% 0%,100% 20%,100% 80%,80% 100%,20% 100%,0% 80%,0% 20%); opacity: 0.3; transition: all 0.4s; }
+  .proc-node.active { opacity: 1; border-color: var(--accent); background: rgba(245,197,24,0.12); box-shadow: var(--glow); animation: pulseGold 0.8s infinite; }
+  .proc-node.done { opacity: 1; border-color: var(--accent3); background: rgba(245,197,24,0.18); }
+  @keyframes pulseGold { 0%,100%{box-shadow:var(--glow)} 50%{box-shadow:0 0 40px rgba(245,197,24,0.85)} }
+  .proc-log { font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: var(--accent); height: 80px; overflow: hidden; text-align: left; width: 400px; max-width: 90vw; }
+  .log-line { opacity: 0; animation: logIn 0.3s forwards; color: var(--muted); }
+  .log-line.current { color: var(--accent); }
+  @keyframes logIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+  @media (max-width:700px) {
+    nav { padding:1rem; } nav ul { gap:1rem; }
+    .form-grid { grid-template-columns:1fr; }
+    .result-metrics { grid-template-columns:1fr 1fr; }
+    #hero { padding:8rem 1.5rem 4rem; } .hero-stats { gap:1.5rem; }
+    .pipeline-grid { grid-template-columns:1fr 1fr; } .pipeline-grid::before { display:none; }
+    #pipeline, #apply, #tech { padding:5rem 1.5rem; } .result-card { padding:2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<div class="scanline"></div>
+<canvas id="bg-canvas"></canvas>
+
+<nav>
+  <div class="logo">BISH<span>.</span>PROCESSOR</div>
+  <ul>
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#apply">Apply</a></li>
+    <li><a href="#tech">Tech Stack</a></li>
+  </ul>
+</nav>
+
+<section id="hero">
+  <div class="hero-badge">◆ Agentic AI · LangGraph Powered ◆</div>
+  <h1 class="hero-title">
+    <span class="line1">BISH</span>
+    <span class="line2">PROCESSOR</span>
+  </h1>
+  <p class="hero-sub">An autonomous multi-node AI pipeline that evaluates, scores, and routes job applicants in real-time — built on LangGraph stateful agents.</p>
+  <div class="hero-cta">
+    <a href="#apply" class="btn-primary">Run Pipeline →</a>
+    <a href="#pipeline" class="btn-outline">View Nodes</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num" id="cnt1">0</div><div class="stat-label">Nodes Active</div></div>
+    <div class="stat"><div class="stat-num" id="cnt2">0</div><div class="stat-label">States Tracked</div></div>
+    <div class="stat"><div class="stat-num" id="cnt3">0</div><div class="stat-label">Score Points</div></div>
+  </div>
+</section>
+
+<section id="pipeline">
+  <div style="max-width:1300px;margin:0 auto">
+    <div class="section-label">// agentic workflow</div>
+    <h2 class="section-title">5-Node <span>Processing</span><br>Pipeline</h2>
+    <div class="pipeline-grid">
+      <div class="pipeline-node"><div class="node-icon">🎂<span class="node-num">1</span></div><div class="node-title">Age Check</div><div class="node-desc">Validates applicant's age. Minimum 18 years required for eligibility.</div></div>
+      <div class="pipeline-node"><div class="node-icon">🏅<span class="node-num">2</span></div><div class="node-title">Experience Rank</div><div class="node-desc">Categorizes into Junior / Mid-level / Leader based on years of experience.</div></div>
+      <div class="pipeline-node"><div class="node-icon">📊<span class="node-num">3</span></div><div class="node-title">Score Calc</div><div class="node-desc">Computes a score from 4–10 based on experience, skills, and achievements.</div></div>
+      <div class="pipeline-node"><div class="node-icon">⚖️<span class="node-num">4</span></div><div class="node-title">Decision Node</div><div class="node-desc">Conditional routing: score ≥ 6 advances to response; below routes to END.</div></div>
+      <div class="pipeline-node"><div class="node-icon">📨<span class="node-num">5</span></div><div class="node-title">Response Gen</div><div class="node-desc">Generates the final outcome message and schedules interview for approved candidates.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="apply">
+  <div class="form-container">
+    <div class="section-label">// initiate processing</div>
+    <h2 class="section-title">Submit <span>Application</span></h2>
+    <div class="form-grid">
+      <div class="field"><label>Full Name</label><input type="text" id="f-name" placeholder="e.g. Bishal Mondal"/></div>
+      <div class="field"><label>Age</label><input type="number" id="f-age" placeholder="e.g. 24" min="1" max="99"/></div>
+      <div class="field"><label>Years of Experience</label><input type="number" id="f-exp" placeholder="e.g. 6" min="0" max="50"/></div>
+      <div class="field"><label>Achievement</label>
+        <select id="f-ach">
+          <option value="">None</option>
+          <option value="ICPC winner">ICPC Winner</option>
+          <option value="National Hackathon Winner">National Hackathon Winner</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>Skills — select all that apply</label>
+        <div class="skills-grid">
+          <div class="skill-chip" data-skill="ai full stack">⚡ AI Full Stack</div>
+          <div class="skill-chip" data-skill="machine learning">🤖 Machine Learning</div>
+          <div class="skill-chip" data-skill="python">🐍 Python</div>
+          <div class="skill-chip" data-skill="langgraph">🕸 LangGraph</div>
+          <div class="skill-chip" data-skill="react">⚛️ React</div>
+          <div class="skill-chip" data-skill="cloud">☁️ Cloud</div>
+          <div class="skill-chip" data-skill="devops">🔧 DevOps</div>
+          <div class="skill-chip" data-skill="data science">📈 Data Science</div>
+        </div>
+      </div>
+    </div>
+    <button class="submit-btn" id="submit-btn">◆ &nbsp; INITIATE PIPELINE PROCESSING &nbsp; ◆</button>
+  </div>
+</section>
+
+<section id="tech">
+  <div class="section-label">// built with</div>
+  <h2 class="section-title">Tech <span>Stack</span></h2>
+  <div class="tech-grid">
+    <div class="tech-card"><div class="tech-icon">🕸</div><div class="tech-name">LangGraph</div><div class="tech-desc">Stateful multi-actor graph framework powering the 5-node agentic pipeline with conditional routing.</div></div>
+    <div class="tech-card"><div class="tech-icon">🔗</div><div class="tech-name">LangChain</div><div class="tech-desc">Orchestrates LLM integrations and agent tools. Foundation of the processing chain logic.</div></div>
+    <div class="tech-card"><div class="tech-icon">📝</div><div class="tech-name">TypedDict State</div><div class="tech-desc">Strongly typed shared state object carries all applicant data through every node of the graph.</div></div>
+    <div class="tech-card"><div class="tech-icon">⚙️</div><div class="tech-name">Conditional Edges</div><div class="tech-desc">Dynamic routing at the decision node routes to interview scheduling or terminates the pipeline.</div></div>
+    <div class="tech-card"><div class="tech-icon">🐍</div><div class="tech-name">Python 3.10+</div><div class="tech-desc">Core runtime with type hints and async support. Originally prototyped in Google Colab.</div></div>
+    <div class="tech-card"><div class="tech-icon">🔬</div><div class="tech-name">Score Engine</div><div class="tech-desc">Rule-based scoring assigns 4–10 points combining experience, skills, and achievement signals.</div></div>
+  </div>
+</section>
+
+<footer>
+  <p>BISH PROCESSOR &nbsp;|&nbsp; Agentic AI Pipeline &nbsp;|&nbsp; Built by <span>Bishal Mondal</span></p>
+  <p style="margin-top:0.5rem;font-size:0.6rem;opacity:0.4;">Powered by LangGraph · StateGraph · Conditional Routing · Python</p>
+</footer>
+
+<div id="processing">
+  <div class="proc-title">⬡ &nbsp; PIPELINE EXECUTING &nbsp; ⬡</div>
+  <div class="proc-nodes">
+    <div class="proc-node" id="pn1">🎂</div>
+    <div style="color:var(--muted);font-size:0.8rem">→</div>
+    <div class="proc-node" id="pn2">🏅</div>
+    <div style="color:var(--muted);font-size:0.8rem">→</div>
+    <div class="proc-node" id="pn3">📊</div>
+    <div style="color:var(--muted);font-size:0.8rem">→</div>
+    <div class="proc-node" id="pn4">⚖️</div>
+    <div style="color:var(--muted);font-size:0.8rem">→</div>
+    <div class="proc-node" id="pn5">📨</div>
+  </div>
+  <div class="proc-log" id="proc-log"></div>
+</div>
+
+<div id="result-overlay">
+  <div class="result-card">
+    <div class="result-status" id="r-status"></div>
+    <div class="result-name" id="r-name"></div>
+    <div class="result-role" id="r-role"></div>
+    <div class="result-metrics">
+      <div class="metric"><div class="metric-val" id="r-score">0</div><div class="metric-lbl">Score</div></div>
+      <div class="metric"><div class="metric-val" id="r-exp">0</div><div class="metric-lbl">Yrs Exp</div></div>
+      <div class="metric"><div class="metric-val" id="r-age">0</div><div class="metric-lbl">Age</div></div>
+    </div>
+    <div class="score-bar-wrap">
+      <div class="score-bar-label"><span>SCORE</span><span id="r-score-label">0 / 10</span></div>
+      <div class="score-bar-track"><div class="score-bar-fill" id="r-bar" style="width:0%"></div></div>
+    </div>
+    <div class="result-pipeline" id="r-pipeline"></div>
+    <div class="result-message" id="r-message"></div>
+    <button class="close-btn" onclick="closeResult()">◀ Close</button>
+  </div>
+</div>
+
+<script>
+// CURSOR
+const cursor=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px';});
+(function a(){rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(a);})();
+document.querySelectorAll('a,button,.skill-chip').forEach(el=>{
+  el.addEventListener('mouseenter',()=>ring.style.transform='translate(-50%,-50%) scale(2)');
+  el.addEventListener('mouseleave',()=>ring.style.transform='translate(-50%,-50%) scale(1)');
+});
+
+// THREE.JS
+const cv=document.getElementById('bg-canvas');
+const rdr=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
+rdr.setPixelRatio(Math.min(devicePixelRatio,2));
+rdr.setSize(innerWidth,innerHeight);
+const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
+cam.position.z=30;
+
+const geo=new THREE.IcosahedronGeometry(0.4,0);
+const mat=new THREE.MeshBasicMaterial({color:0xf5c518,wireframe:true,transparent:true,opacity:0.15});
+const pts=[];
+for(let i=0;i<60;i++){
+  const m=new THREE.Mesh(geo,mat.clone());
+  m.position.set((Math.random()-.5)*80,(Math.random()-.5)*60,(Math.random()-.5)*40);
+  m.rotation.set(Math.random()*6.28,Math.random()*6.28,Math.random()*6.28);
+  m.userData={vx:(Math.random()-.5)*.015,vy:(Math.random()-.5)*.01,rx:Math.random()*.01,ry:Math.random()*.01};
+  sc.add(m);pts.push(m);
+}
+const bm=new THREE.Mesh(new THREE.OctahedronGeometry(6,2),new THREE.MeshBasicMaterial({color:0xc9960a,wireframe:true,transparent:true,opacity:0.08}));
+sc.add(bm);
+const lp=[];
+for(let i=0;i<5;i++){const a=(i/5)*6.28;lp.push(new THREE.Vector3(Math.cos(a)*12,Math.sin(a)*12,0));}
+sc.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([...lp,lp[0]]),new THREE.LineBasicMaterial({color:0xf5c518,transparent:true,opacity:0.07})));
+lp.forEach(p=>{const s=new THREE.Mesh(new THREE.SphereGeometry(0.3,8,8),new THREE.MeshBasicMaterial({color:0xf5c518,wireframe:true,transparent:true,opacity:0.3}));s.position.copy(p);sc.add(s);});
+
+let t=0,mox=0,moy=0;
+document.addEventListener('mousemove',e=>{mox=(e.clientX/innerWidth-.5)*2;moy=(e.clientY/innerHeight-.5)*2;});
+(function loop(){requestAnimationFrame(loop);t+=.005;
+  bm.rotation.x=t*.08+moy*.1;bm.rotation.y=t*.12+mox*.1;
+  cam.position.x+=(mox*2-cam.position.x)*.03;cam.position.y+=(-moy*1.5-cam.position.y)*.03;cam.lookAt(0,0,0);
+  pts.forEach(p=>{p.position.x+=p.userData.vx;p.position.y+=p.userData.vy;p.rotation.x+=p.userData.rx;p.rotation.y+=p.userData.ry;
+    if(p.position.x>45)p.position.x=-45;if(p.position.x<-45)p.position.x=45;
+    if(p.position.y>35)p.position.y=-35;if(p.position.y<-35)p.position.y=35;
+  });rdr.render(sc,cam);
+})();
+window.addEventListener('resize',()=>{rdr.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();});
+
+// COUNTERS
+function cnt(el,n,d=1200){let s=null;(function r(ts){if(!s)s=ts;const p=Math.min((ts-s)/d,1);el.textContent=Math.floor(p*n);if(p<1)requestAnimationFrame(r);else el.textContent=n;})(performance.now());}
+setTimeout(()=>{cnt(document.getElementById('cnt1'),5);cnt(document.getElementById('cnt2'),12);cnt(document.getElementById('cnt3'),10);},600);
+
+// SCROLL REVEAL
+const obs=new IntersectionObserver(es=>es.forEach((e,i)=>{if(e.isIntersecting)setTimeout(()=>e.target.classList.add('visible'),i*80);}),{threshold:.15});
+document.querySelectorAll('.pipeline-node,.tech-card').forEach(el=>obs.observe(el));
+
+// SKILLS
+document.querySelectorAll('.skill-chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('active')));
+
+// PIPELINE
+function runPipeline(s){
+  s.valid=s.age>=18;
+  s.role=s.experience>=10?'Leader':s.experience>=5?'Mid-level':'Junior';
+  s.score=0;
+  if(s.experience>=10||s.achievements==='ICPC winner')s.score=10;
+  else if(s.experience>=5||s.achievements==='National Hackathon Winner')s.score=8;
+  else if(s.experience>=2||s.skills.includes('ai full stack'))s.score=6;
+  else s.score=4;
+  if(s.score>=10){s.decision=true;s.finalMsg='Your interview is being scheduled for the Lead role. Expect a call within 48 hours.';}
+  else if(s.score>=6){s.decision=true;s.finalMsg='Your interview is being scheduled for the Managerial role. Our team will reach out shortly.';}
+  else{s.decision=false;s.finalMsg='You are not eligible for the current job descriptions.';}
+  s.response=s.decision;
+  return s;
+}
+
+// PROCESSING OVERLAY
+function showProcessing(cb){
+  const ov=document.getElementById('processing'),log=document.getElementById('proc-log');
+  ov.classList.add('show');log.innerHTML='';
+  const ns=['pn1','pn2','pn3','pn4','pn5'];
+  const ls=['> age_check: validating applicant age...','> experience_categorization: assigning role tier...','> score_calculation: computing weighted score...','> make_decision: evaluating eligibility...','> generate_response: crafting final output...'];
+  ns.forEach(id=>document.getElementById(id).className='proc-node');
+  let i=0;
+  function step(){
+    if(i>0){document.getElementById(ns[i-1]).className='proc-node done';const p=log.querySelector('.log-line.current');if(p)p.classList.remove('current');}
+    if(i>=ns.length){setTimeout(()=>{ov.classList.remove('show');cb();},400);return;}
+    document.getElementById(ns[i]).className='proc-node active';
+    const l=document.createElement('div');l.className='log-line current';l.textContent=ls[i];log.appendChild(l);
+    i++;setTimeout(step,700);
+  }
+  step();
+}
+
+// SUBMIT
+document.getElementById('submit-btn').addEventListener('click',()=>{
+  const name=document.getElementById('f-name').value.trim();
+  const age=parseInt(document.getElementById('f-age').value);
+  const exp=parseInt(document.getElementById('f-exp').value);
+  const ach=document.getElementById('f-ach').value;
+  const skills=[...document.querySelectorAll('.skill-chip.active')].map(c=>c.dataset.skill);
+  if(!name){alert('Please enter your name.');return;}
+  if(isNaN(age)||age<1){alert('Please enter a valid age.');return;}
+  if(isNaN(exp)||exp<0){alert('Please enter valid experience.');return;}
+  showProcessing(()=>showResult(runPipeline({name,age,experience:exp,achievements:ach,skills,valid:false,score:0,decision:false,response:false,role:'',finalMsg:''})));
+});
+
+// RESULT
+function showResult(s){
+  document.getElementById('r-status').textContent=s.valid?(s.decision?'◆ APPLICATION APPROVED':'◆ APPLICATION REVIEWED'):'◆ ELIGIBILITY FAILED';
+  document.getElementById('r-status').className='result-status '+(s.decision?'status-approved':'status-rejected');
+  document.getElementById('r-name').textContent=s.name;
+  document.getElementById('r-role').textContent='// '+s.role+' · '+s.experience+' YRS EXP';
+  document.getElementById('r-score').textContent=s.score;
+  document.getElementById('r-exp').textContent=s.experience;
+  document.getElementById('r-age').textContent=s.age;
+  document.getElementById('r-score-label').textContent=s.score+' / 10';
+  document.getElementById('r-message').textContent=s.finalMsg;
+  setTimeout(()=>document.getElementById('r-bar').style.width=(s.score/10*100)+'%',100);
+  const pipe=document.getElementById('r-pipeline');
+  pipe.innerHTML='';
+  ['AGE CHECK','EXP RANK','SCORE','DECISION','RESPONSE'].forEach((label,i)=>{
+    if(i>0){const a=document.createElement('span');a.className='step-arrow';a.textContent='→';pipe.appendChild(a);}
+    const d=document.createElement('div');
+    d.className='pipeline-step '+([s.valid,true,true,s.decision,s.response][i]?'step-done':'step-fail');
+    d.textContent=label;pipe.appendChild(d);
+  });
+  document.getElementById('result-overlay').classList.add('show');
+}
+function closeResult(){document.getElementById('result-overlay').classList.remove('show');document.getElementById('r-bar').style.width='0%';}
+document.getElementById('result-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('result-overlay'))closeResult();});
+</script>
+</body>
+</html>
